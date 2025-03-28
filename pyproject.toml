@@ -1,0 +1,29 @@
+[project]
+name = "msms-spectra-dataset"
+version = "0.1.0"
+description = "A dataset tool to load and query MS/MS spectra from MGF files."
+authors = [
+    { name = "Nikita Kubrakov", email = "rukubrakov@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "numpy>=1.23",
+    "pyteomics>=4.5",
+    "spectrum_utils>=0.4.0"
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+packages = [
+    { include = "msms_spectra_dataset" }
+]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+memory-profiler = "^0.61.0"
+ruff = "^0.11.2"
+
