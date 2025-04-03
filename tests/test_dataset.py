@@ -1,7 +1,7 @@
-from msms_spectra_dataset.dataset import MGFSpectraDataset
+from msms_spectra_dataset.in_memory_dataset import InMemoryMGFSpectraDataset
 
 def test_empty_dataset():
-    ds = MGFSpectraDataset([])
+    ds = InMemoryMGFSpectraDataset([])
     assert len(ds) == 0
 
 def test_load_single_spectrum(tmp_path):
@@ -15,11 +15,12 @@ END IONS
 """
     mgf_file = tmp_path / "test.mgf"
     mgf_file.write_text(mgf_content)
-    ds = MGFSpectraDataset([str(mgf_file)])
+    ds = InMemoryMGFSpectraDataset([str(mgf_file)])
     assert len(ds) == 1
     spec = ds[0]
     assert spec.identifier == "TestSpectrum"
     assert spec.precursor_mz == 500.25
+    assert spec.precursor_intensity == 1000  # Test the precursor intensity
 
 def test_missing_parameters(tmp_path):
     mgf_content = """BEGIN IONS
@@ -29,7 +30,7 @@ END IONS
 """
     mgf_file = tmp_path / "missing_params.mgf"
     mgf_file.write_text(mgf_content)
-    ds = MGFSpectraDataset([str(mgf_file)])
+    ds = InMemoryMGFSpectraDataset([str(mgf_file)])
     assert len(ds) == 1
     spec = ds[0]
     assert spec.identifier == "MissingParams"
@@ -52,7 +53,7 @@ END IONS
 """
     mgf_file = tmp_path / "multiple_spectra.mgf"
     mgf_file.write_text(mgf_content)
-    ds = MGFSpectraDataset([str(mgf_file)])
+    ds = InMemoryMGFSpectraDataset([str(mgf_file)])
     assert len(ds) == 2
     assert ds[0].identifier == "Spectrum1"
     assert ds[1].identifier == "Spectrum2"
@@ -67,7 +68,7 @@ END IONS
 """
     mgf_file = tmp_path / "invalid_charge.mgf"
     mgf_file.write_text(mgf_content)
-    ds = MGFSpectraDataset([str(mgf_file)])
+    ds = InMemoryMGFSpectraDataset([str(mgf_file)])
     assert len(ds) == 1
     spec = ds[0]
     assert spec.identifier == "InvalidCharge"
