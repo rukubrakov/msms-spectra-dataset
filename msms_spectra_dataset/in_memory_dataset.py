@@ -29,7 +29,6 @@ class InMemoryMGFSpectraDataset:
                         line = "CHARGE=0\n"  # Replace invalid CHARGE with a default value
                 sanitized_lines.append(line)
         
-        # Use sanitized content with pyteomics via StringIO
         sanitized_content = io.StringIO("".join(sanitized_lines))
         return mgf.MGF(sanitized_content, convert_arrays=0)
 
