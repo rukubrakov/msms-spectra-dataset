@@ -4,16 +4,10 @@ A dataset tool to load and query MS/MS spectra from MGF files.
 
 ## Setup
 
-This project uses [Poetry](https://python-poetry.org/) for dependency management and packaging.
-
-### Using Conda and Poetry
-
 1. **Create and activate a Conda environment:**
 
    ```bash
    conda create -n msms-spectra-dataset python=3.11 -y
-   conda init zsh   # if using zsh; otherwise, init for your shell
-   # Restart your terminal, then activate:
    conda activate msms-spectra-dataset
    ```
 
@@ -31,7 +25,7 @@ This project uses [Poetry](https://python-poetry.org/) for dependency management
    poetry install
    ```
 
-   This will create the virtual environment (if not already created) and install all dependencies.
+   This will install all dependencies.
 
    If you also need development dependencies (e.g., for linting or testing), use:
 
@@ -67,40 +61,39 @@ poetry run ruff check . --fix
 msms-spectra-dataset/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml         # GitHub Actions workflow for tests
+│       └── ci.yml
 ├── benchmarks/
-│   └── benchmark.py       # Benchmarking scripts
-├── msms_spectra_dataset/  # Your package folder containing source code
-│   └── dataset.py         # Dataset implementation
+│   └── benchmark.py
+├── msms_spectra_dataset/
+│   ├── in_memory_dataset.py
+│   ├── on_demand_dataset.py
+│   ├── duckdb_dataset.py
+│   ├── duckdb_hdf5_dataset.py
+│   └── __init__.py
 ├── tests/
-│   └── test_dataset.py    # Unit tests for your package
+│   ├── test_in_memory_dataset.py
+│   ├── test_on_demand_dataset.py
+│   ├── test_duckdb_dataset.py
+│   └── test_duckdb_hdf5_dataset.py
 ├── .gitignore
 ├── poetry.lock
-├── pyproject.toml         # Project metadata and dependency management info
+├── pyproject.toml
 └── README.md
 ```
 
 ## Dataset Types
 
 ### InMemoryMGFSpectraDataset
-- **Description**: Loads all spectra into memory as `MsmsSpectrum` objects.
-- **Use Case**: Suitable for smaller datasets that fit entirely in memory.
-- **Advantages**:
-  - Fast querying and batch operations.
-  - No file I/O after initial loading.
-- **Limitations**:
-  - Memory-intensive for large datasets.
+Loads all spectra into memory as `MsmsSpectrum` objects.
 
 ### OnDemandMGFSpectraDataset
-- **Description**: Stores file paths and byte offsets for spectra, loading them on demand.
-- **Use Case**: Ideal for large datasets that cannot fit in memory.
-- **Advantages**:
-  - Low memory usage.
-  - Can handle very large datasets.
-- **Caching Mechanism**: Keeps the last accessed MGF file open to reduce file I/O overhead.
-- **Limitations**:
-  - Slower querying and batch operations due to file I/O.
-  - Random access is less efficient compared to sequential access.
+Stores file paths and byte offsets for spectra, loading them on demand.
+
+### DuckDBSpectraDataset
+Uses DuckDB to store both metadata and spectra data (including `mz` and `intensity` arrays) and enables SQL-like querying.
+
+### DuckDBHDF5SpectraDataset
+Combines DuckDB for metadata storage and HDF5 for spectra storage, enabling efficient querying and random access.
 
 ## Benchmarking
 
@@ -119,23 +112,3 @@ poetry run python benchmarks/benchmark.py path/to/your_sample.mgf --copies 10 --
 - `--batch_size`: Batch size for batch reading (default: 512).
 - `--iterations`: Number of iterations for each benchmark (default: 3).
 - `--max_memory`: Maximum CPU memory in GiB to calculate the maximum number of spectra that can fit in memory (default: 16 GiB).
-
-### Example Output
-
-The benchmark results will be summarized in a table format. Example:
-
-```
-Benchmark Summary:
-+---------------------------+---------+
-| Metric                    | Value   |
-+---------------------------+---------+
-| Loading Time (s)          | 0.984   |
-| Loading Memory (MiB)      | 453.92  |
-| Memory per Element (MiB)  | 0.025123|
-| Max Spectra in 16 GiB     | 655360  |
-| Query Time (m/z > 500) (s)| 0.123   |
-| Query Time (charge == 2) (s)| 0.098  |
-| Batch Time (Sequential) (s)| 0.456  |
-| Batch Time (Random) (s)   | 0.789   |
-+---------------------------+---------+
-```

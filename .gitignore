@@ -175,3 +175,10 @@ cython_debug/
 
 # MGF files
 *.mgf
+
+# DuckDB files
+*.duckdb
+
+# HDF5 files
+*.h5
+*.hdf5
