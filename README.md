@@ -1,6 +1,75 @@
-# msms-spectra-dataset
+# Benchmark Results and Implementation Analysis
 
-A dataset tool to load and query MS/MS spectra from MGF files.
+This project is designed to efficiently load, query, and batch-read MS/MS spectra from MGF files for high-throughput machine learning applications. Below is an overview of the four dataset implementations and their performance characteristics.
+
+## Dataset Implementations
+
+### 1. **InMemoryMGFSpectraDataset**
+- **Approach:** Loads all spectra into memory as `MsmsSpectrum` objects.
+- **Performance:**
+  - Extremely fast sequential and random batch reading.
+  - Limited by memory: ~3 million spectra can be loaded in 16 GiB of RAM.
+- **Use Case:** Best for small-to-medium datasets where low-latency access is critical and memory is sufficient.
+
+### 2. **OnDemandMGFSpectraDataset**
+- **Approach:** Naive solution storing only file paths and byte offsets, loading spectra from disk on demand.
+- **Performance:**
+  - Fast indexing/loading.
+  - Slow random access due to disk reads for each access.
+- **Use Case:** Baseline implementation for comparison purposes.
+
+### 3. **DuckDBSpectraDataset**
+- **Approach:** Uses DuckDB to store metadata and spectra arrays, enabling SQL-like querying.
+- **Performance:**
+  - Slower initial loading from MGF files; subsequent loads are almost instantaneous.
+  - No RAM limits; supports any dataset size.
+  - Disk usage: 2–3x less space per spectrum compared to MGF files.
+  - Faster random and sequential batch reading compared to OnDemand.
+- **Use Case:** Ideal for large datasets requiring efficient querying.
+
+### 4. **DuckDBHDF5SpectraDataset**
+- **Approach:** Combines DuckDB for metadata storage with HDF5 for spectra storage.
+- **Performance:**
+  - Slowest initial load due to HDF5 overhead; subsequent loads are instantaneous.
+  - No RAM limits; supports any dataset size.
+  - Disk usage: More than DuckDBSpectraDataset but less than MGF files.
+  - Random access: 2x faster; sequential access: 5x faster compared to DuckDBSpectraDataset.
+  - Query time slightly slower due to HDF5 overhead.
+- **Use Case:** Best for high-throughput sequential access in machine learning training.
+
+## Performance Summary
+
+| Dataset          | Loading Time (per 1M spectra) | Memory Efficiency                     | Sequential Batch Reading (1M spectra) | Random Batch Reading (1M spectra) | Query Time (m/z > 500) | Query Time (charge == 2) |
+|-------------------|-------------------------------|---------------------------------------|---------------------------------------|-----------------------------------|------------------------|--------------------------|
+| **InMemory**      | ~38 s                        | Limited to ~3M spectra in 16 GiB RAM  | <0.01 s (extremely fast)              | <0.01 s (extremely fast)          | ~0.032 s               | ~0.028 s                |
+| **On-Demand**     | ~0.5 s                       | Minimal footprint                     | -                                     | ~66 s                             | -                      | -                       |
+| **DuckDB**        | ~50 s (initial), <0.01 s subsequent | Compact (250 MiB per 1M spectra)     | ~11.7 s                              | ~42 s                             | ~1.9 s                 | ~1.1 s                  |
+| **DuckDBHDF5**    | ~100 s (initial)             | Moderate (367 MiB per 1M spectra)     | ~2.1 s                               | ~22 s                             | ~4.7 s                 | ~7.2 s                  |
+
+> **Note:** Benchmarks are based on tests with ~1 million spectra on an **Apple M2 Pro** with **16 GiB memory**. While the InMemory approach offers ultrafast access, it is limited by available RAM. DuckDB and DuckDBHDF5 provide scalable solutions with significantly improved access times compared to OnDemand.
+
+## Conclusion
+
+- **InMemoryMGFSpectraDataset:** Best for small datasets that fit in memory and require low-latency processing.
+- **OnDemandMGFSpectraDataset:** Baseline implementation for comparison.
+- **DuckDBSpectraDataset:** Scalable for large datasets with efficient querying.
+- **DuckDBHDF5SpectraDataset:** Excels in sequential batch processing and improved random access for machine learning.
+
+## Further Steps
+
+1. **Explore alternative integrations of DuckDB and HDF5:**  
+   Consider storing spectra (m/z and intensities) in both DuckDB and HDF5. While this may increase storage requirements, it could allow queries to execute as quickly as in the DuckDB-only approach.
+
+2. **Investigate multithreading and multiprocessing:**  
+   Parallelization could significantly improve performance, especially for large datasets or computationally intensive queries.
+
+3. **Enable querying based on spectra data:**  
+   Current benchmarks focus on metadata queries. Adding support for queries like "find all spectra with peaks at m/z = 123.456" could expand the use cases.
+
+4. **Benchmark in constrained environments:**  
+   Conduct benchmarks in containerized environments with memory and resource limitations. Additionally, study the impact of dataset size on performance beyond theoretical analysis.
+
+# Setup, testing, linting and bechmarking
 
 ## Setup
 
@@ -80,20 +149,6 @@ msms-spectra-dataset/
 ├── pyproject.toml
 └── README.md
 ```
-
-## Dataset Types
-
-### InMemoryMGFSpectraDataset
-Loads all spectra into memory as `MsmsSpectrum` objects.
-
-### OnDemandMGFSpectraDataset
-Stores file paths and byte offsets for spectra, loading them on demand.
-
-### DuckDBSpectraDataset
-Uses DuckDB to store both metadata and spectra data (including `mz` and `intensity` arrays) and enables SQL-like querying.
-
-### DuckDBHDF5SpectraDataset
-Combines DuckDB for metadata storage and HDF5 for spectra storage, enabling efficient querying and random access.
 
 ## Benchmarking
 
