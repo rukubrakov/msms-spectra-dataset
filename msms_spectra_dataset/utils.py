@@ -17,7 +17,8 @@ def parse_spectrum(parsed: Dict[str, Any]) -> MsmsSpectrum:
     params = parsed.get("params", {})
     title = params.get("title", "")
     precursor_mz = params.get("pepmass", [0.0])[0]
-    precursor_intensity = params.get("pepmass", [None, None])[1]
+    pepmass = params.get("pepmass", [None, None])
+    precursor_intensity = pepmass[1] if len(pepmass) > 1 else None
     mz_array = np.array(parsed.get("m/z array", []))
     intensity_array = np.array(parsed.get("intensity array", []))
     retention_time = params.get("rtinseconds", float("nan"))
